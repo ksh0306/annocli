@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -110,11 +111,12 @@ func tarDir(src string) (string, error) {
 }
 
 func upload(cmd *cobra.Command, args []string) {
-
+	startTime := time.Now()
 	if uploadDirPath != "" {
 		// do compress
 		var err error
 		uploadFilePath, err = tarDir(uploadDirPath)
+		log.Printf("made tar time: %v\n", time.Since(startTime))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -146,12 +148,12 @@ func upload(cmd *cobra.Command, args []string) {
 	r.Header.Add("Content-Type", writer.FormDataContentType())
 	client := &http.Client{}
 	resp, err := client.Do(r)
-
 	if err != nil {
 		log.Fatalf("An Error Occured %v", err)
 	}
 	defer resp.Body.Close()
 
+	log.Printf("upload time: %v\n", time.Since(startTime))
 	respbody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("err:", err.Error())
