@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var signInURL = "http://localhost:1323/api/signin"
@@ -43,6 +44,30 @@ func loginUser(cmd *cobra.Command, args []string) {
 		return
 	}
 	fmt.Println("body:", string(body))
+
+	var data interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	msg := data.(map[string]interface{})
+	token := msg["token"]
+	fmt.Println("token: ", token)
+
+	// 여기서 username, password, token 을 저장하자
+	viper.Set(viperUsername, username)
+	viper.Set(viperPassword, password)
+	viper.Set(viperToken, token)
+	if err := viper.WriteConfig(); err != nil {
+		log.Println(err)
+	}
+
+	// test
+	log.Println(viperUsername, viper.GetString(viperUsername))
+	log.Println(viperPassword, viper.GetString(viperPassword))
+	log.Println(viperServerURL, viper.GetString(viperServerURL))
+	log.Println(viperToken, viper.GetString(viperToken))
 }
 
 // loginCmd represents the login command

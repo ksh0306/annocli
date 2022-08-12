@@ -4,22 +4,73 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+const (
+	appName    = "annocli"
+	configName = "config"
+	configType = "yaml"
+
+	viperUsername  = "username"
+	viperPassword  = "password"
+	viperServerURL = "serverURL"
+	viperToken     = "token"
+)
+
+func configViper() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	configDir := filepath.Join(homeDir, appName)
+	configFile := filepath.Join(configDir, configName+"."+configType)
+	log.Println("configDir:", configDir)
+	log.Println("configFile:", configFile)
+
+	viper.SetConfigName("config")  // name of config file (without extension)
+	viper.SetConfigType("yaml")    // REQUIRED if the config file does not have the extension in the name
+	viper.AddConfigPath(configDir) // call multiple times to add many search paths
+
+	// check if error is "file not exists"
+	_, error := os.Stat(configFile)
+	if os.IsNotExist(error) {
+		if err := os.MkdirAll(configDir, 0755); err != nil {
+			log.Fatal(err)
+		}
+		if _, err := os.Create(configFile); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if err := viper.ReadInConfig(); err != nil { // Handle errors reading the config file
+		log.Fatalf("Fatal error config file: %v \n", err)
+	}
+
+	log.Println(viperUsername, viper.GetString(viperUsername))
+	log.Println(viperPassword, viper.GetString(viperPassword))
+	log.Println(viperServerURL, viper.GetString(viperServerURL))
+	log.Println(viperToken, viper.GetString(viperToken))
+
+	// watch file changed and reload
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		fmt.Println("Config file changed:", e.Name)
+	})
+	viper.WatchConfig()
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "annocli",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Annotation AI CLI tool which interact with it's API servers",
+	Long:  `Annotation AI CLI tool which interact with it's API servers`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
@@ -45,4 +96,6 @@ func init() {
 	// when this action is called directly.
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	configViper()
 }
