@@ -6,6 +6,7 @@ package cmd
 import (
 	"archive/tar"
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,23 +20,18 @@ import (
 
 var uploadURL = "http://localhost:1323/api/upload"
 
-func tarDir(sourceDir string) (string, error) {
-	destFilePath := filepath.Join(sourceDir, filepath.Base(sourceDir)+".tar")
+// https://github.com/mimoo/eureka/blob/master/folders.go
+func tarDir(src string) (string, error) {
 
-	dir, err := os.Open(sourceDir)
+	// prepare dest tarfile and tarWriter
+	tempDir, err := os.MkdirTemp(".", "tmp-")
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	defer dir.Close()
-
-	// get list of files
-	files, err := dir.Readdir(0)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// create tar file
-	tarfile, err := os.Create(destFilePath)
+	destFilePath := filepath.Join(tempDir, filepath.Base(src)+".tar")
+	log.Println(destFilePath)
+	tarfile, err := os.OpenFile(destFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
+	// tarfile, err := os.Create(destFilePath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,34 +42,68 @@ func tarDir(sourceDir string) (string, error) {
 	tw := tar.NewWriter(fileWriter)
 	defer tw.Close()
 
-	for _, fileInfo := range files {
-		// if fi÷leInfo.IsDir() {
-		if !fileInfo.Mode().IsRegular() {
-			continue
-		}
-
-		file, err := os.Open(dir.Name() + string(filepath.Separator) + fileInfo.Name())
+	// start tar
+	// is file a folder?
+	fi, err := os.Stat(src)
+	if err != nil {
+		return "", err
+	}
+	mode := fi.Mode()
+	if mode.IsRegular() {
+		// get header
+		header, err := tar.FileInfoHeader(fi, src)
 		if err != nil {
-			log.Fatal(err)
+			return "", err
 		}
-		defer file.Close()
-
-		// prepare the tar header
-		header := new(tar.Header)
-		header.Name = file.Name()
-		header.Size = fileInfo.Size()
-		header.Mode = int64(fileInfo.Mode())
-		header.ModTime = fileInfo.ModTime()
-
-		err = tw.WriteHeader(header)
+		// write header
+		if err := tw.WriteHeader(header); err != nil {
+			return "", err
+		}
+		// get content
+		data, err := os.Open(src)
 		if err != nil {
-			log.Fatal(err)
+			return "", err
 		}
+		if _, err := io.Copy(tw, data); err != nil {
+			return "", err
+		}
+	} else if mode.IsDir() { // folder
 
-		_, err = io.Copy(tw, file)
-		if err != nil {
-			log.Fatal(err)
-		}
+		// walk through every file in the folder
+		filepath.Walk(src, func(file string, fi os.FileInfo, err error) error {
+			// generate tar header
+			header, err := tar.FileInfoHeader(fi, file)
+			if err != nil {
+				return err
+			}
+
+			// must provide real name
+			// (see https://golang.org/src/archive/tar/common.go?#L626)
+			header.Name = filepath.ToSlash(file)
+
+			// write header
+			if err := tw.WriteHeader(header); err != nil {
+				return err
+			}
+			// if not a dir, write file content
+			if !fi.IsDir() {
+				data, err := os.Open(file)
+				if err != nil {
+					return err
+				}
+				if _, err := io.Copy(tw, data); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	} else {
+		return "", fmt.Errorf("error: file type not supported")
+	}
+
+	// produce tar
+	if err := tw.Close(); err != nil {
+		return "", err
 	}
 
 	return destFilePath, nil
@@ -88,11 +118,17 @@ func upload(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer func(tarfile string) {
-			err := os.Remove(tarfile)
-			log.Println("remove tar: ", tarfile, err)
-		}(uploadFilePath)
+		defer func() {
+			tmpDir := filepath.Dir(uploadFilePath)
+			log.Println("remove dir ", tmpDir)
+			if err := os.RemoveAll(tmpDir); err != nil {
+				log.Println(err)
+				return
+			}
+			log.Println("remove tar: ", uploadFilePath)
+		}()
 	}
+
 	log.Println("uploadFilePath:", uploadFilePath)
 	file, err := os.Open(uploadFilePath)
 	if err != nil {
