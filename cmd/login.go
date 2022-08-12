@@ -16,10 +16,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-var signInURL = "http://localhost:1323/api/signin"
+var loginEndpoint = "/login"
 
 func loginUser(cmd *cobra.Command, args []string) {
 	fmt.Println("login called")
+	loginURL := viper.GetString(viperServerURL) + loginEndpoint
 
 	userInfo := strings.Split(account, ":")
 	username := userInfo[0]
@@ -31,7 +32,7 @@ func loginUser(cmd *cobra.Command, args []string) {
 	})
 	responseBody := bytes.NewBuffer(postBody)
 
-	resp, err := http.Post(signInURL, "application/json", responseBody)
+	resp, err := http.Post(loginURL, "application/json", responseBody)
 
 	if err != nil {
 		log.Fatalf("An Error Occured %v", err)
@@ -74,10 +75,10 @@ func loginUser(cmd *cobra.Command, args []string) {
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Log in user",
-	Long: `Log in user
-Usage:
+	Long: `Log in user with account which means username and password
+Example:
 
-wip
+$ annocli login --account={username}:{password}
 `,
 	Run: loginUser,
 }

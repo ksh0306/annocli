@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type User struct {
@@ -21,10 +22,12 @@ type User struct {
 	Password string `json:password`
 }
 
-var signUpURL = "http://localhost:1323/api/signup"
+var signUpEndpoint = "/v1/signup"
 
 func addUser(cmd *cobra.Command, args []string) {
 	fmt.Println("adduser called")
+	signUpURL := viperServerURL + signUpEndpoint
+	// TODO:verify url format
 
 	userInfo := strings.Split(account, ":")
 	username := userInfo[0]
@@ -34,10 +37,16 @@ func addUser(cmd *cobra.Command, args []string) {
 		"username": username,
 		"password": password,
 	})
-	responseBody := bytes.NewBuffer(postBody)
-
-	resp, err := http.Post(signUpURL, "application/json", responseBody)
-
+	requestBody := bytes.NewBuffer(postBody)
+	req, err := http.NewRequest(http.MethodPost, signUpURL, requestBody)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", viper.GetString(viperToken)))
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatalf("An Error Occured %v", err)
 	}
