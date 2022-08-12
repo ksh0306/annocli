@@ -1,4 +1,4 @@
 build:
 	go build -o annocli .
-	mv annocli $GOPATH/bin
+	mv annocli ${GOPATH}/bin
 	

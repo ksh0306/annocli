@@ -17,9 +17,10 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var uploadURL = "http://localhost:1323/api/upload"
+var uploadEndpoint = "/v1/upload"
 
 // https://github.com/mimoo/eureka/blob/master/folders.go
 func tarDir(src string) (string, error) {
@@ -138,18 +139,28 @@ func upload(cmd *cobra.Command, args []string) {
 	}
 	defer file.Close()
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
+	requestBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(requestBody)
 	part, _ := writer.CreateFormFile("file", file.Name())
 	io.Copy(part, file)
 	writer.Close()
 
-	r, _ := http.NewRequest("POST", uploadURL, body)
-	r.Header.Add("Content-Type", writer.FormDataContentType())
-	client := &http.Client{}
-	resp, err := client.Do(r)
+	uploadURL := viper.GetString(viperServerURL) + uploadEndpoint
+	// TODO:verify url format
+
+	req, err := http.NewRequest(http.MethodPost, uploadURL, requestBody)
 	if err != nil {
-		log.Fatalf("An Error Occured %v", err)
+		log.Println(err)
+		return
+	}
+	// req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", writer.FormDataContentType())
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", viper.GetString(viperToken)))
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return
 	}
 	defer resp.Body.Close()
 

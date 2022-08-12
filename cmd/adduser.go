@@ -26,7 +26,7 @@ var signUpEndpoint = "/v1/signup"
 
 func addUser(cmd *cobra.Command, args []string) {
 	fmt.Println("adduser called")
-	signUpURL := viperServerURL + signUpEndpoint
+	signUpURL := viper.GetString(viperServerURL) + signUpEndpoint
 	// TODO:verify url format
 
 	userInfo := strings.Split(account, ":")
