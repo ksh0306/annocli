@@ -33,7 +33,6 @@ func tarDir(src string) (string, error) {
 	destFilePath := filepath.Join(tempDir, filepath.Base(src)+".tar")
 	log.Println(destFilePath)
 	tarfile, err := os.OpenFile(destFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
-	// tarfile, err := os.Create(destFilePath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,9 +43,24 @@ func tarDir(src string) (string, error) {
 	tw := tar.NewWriter(fileWriter)
 	defer tw.Close()
 
+	// move to the base dir
+	srcFi, err := os.Stat(src)
+	if err != nil {
+		return "", err
+	}
+	if srcFi.Mode().IsDir() {
+		if err := os.Chdir(src); err != nil {
+			return "", err
+		}
+		if err := os.Chdir("../"); err != nil {
+			return "", err
+		}
+	}
+
 	// start tar
 	// is file a folder?
-	fi, err := os.Stat(src)
+	baseDir := filepath.Base(src)
+	fi, err := os.Stat(baseDir)
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +76,7 @@ func tarDir(src string) (string, error) {
 			return "", err
 		}
 		// get content
-		data, err := os.Open(src)
+		data, err := os.Open(baseDir)
 		if err != nil {
 			return "", err
 		}
@@ -72,7 +86,7 @@ func tarDir(src string) (string, error) {
 	} else if mode.IsDir() { // folder
 
 		// walk through every file in the folder
-		filepath.Walk(src, func(file string, fi os.FileInfo, err error) error {
+		filepath.Walk(baseDir, func(file string, fi os.FileInfo, err error) error {
 			// generate tar header
 			header, err := tar.FileInfoHeader(fi, file)
 			if err != nil {
@@ -113,6 +127,10 @@ func tarDir(src string) (string, error) {
 
 func upload(cmd *cobra.Command, args []string) {
 	startTime := time.Now()
+	cwd, err := os.Getwd() // remember current directory
+	if err != nil {
+		log.Fatal(err)
+	}
 	if uploadDirPath != "" {
 		// do compress
 		var err error
@@ -121,6 +139,13 @@ func upload(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		// back to current dir after tarDir
+		log.Println("back to current directory: ", cwd)
+		if err := os.Chdir(cwd); err != nil {
+			log.Fatal(err)
+		}
+
 		defer func() {
 			tmpDir := filepath.Dir(uploadFilePath)
 			log.Println("remove dir ", tmpDir)
@@ -176,11 +201,13 @@ func upload(cmd *cobra.Command, args []string) {
 // uploadCmd represents the upload command
 var uploadCmd = &cobra.Command{
 	Use:   "upload",
-	Short: "upload file",
-	Long: `upload file
-Usage:
+	Short: "upload file or directory",
+	Long: `upload file or directory
+example:
 
-wip
+$ annocli upload --dir=upload/coco1
+
+$ annocli upload --file=upload/coco1/COCO_train2014_000000000009.jpg
 `,
 	Run: upload,
 }

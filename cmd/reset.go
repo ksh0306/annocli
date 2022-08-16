@@ -26,7 +26,6 @@ var resetCmd = &cobra.Command{
 			return
 		}
 		fmt.Println("config.yaml removed. reset config completed.")
-
 	},
 }
 
