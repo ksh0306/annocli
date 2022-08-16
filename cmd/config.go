@@ -37,8 +37,11 @@ var configCmd = &cobra.Command{
 	Short: "config sets server URL and more",
 	Long: `config sets server URL and more
 
-example: 
+usage: 
 $ annocli config --server=http://annotation-ai.com
+
+if you want to use HTTPS, then use like below
+$ annocli config --server=https://annotation-ai.com
 `,
 	Run: config,
 }

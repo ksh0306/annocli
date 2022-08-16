@@ -67,7 +67,7 @@ var adduserCmd = &cobra.Command{
 	Long: `Sign up new user
 Usage:
 
-wip
+$ annocli adduser --account=username:password
 `,
 	Run: addUser,
 }
