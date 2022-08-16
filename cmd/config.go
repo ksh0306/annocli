@@ -13,18 +13,22 @@ import (
 	"github.com/spf13/viper"
 )
 
-const httpPrefix = "http://"
+const (
+	httpPrefix  = "http://"
+	httpsPrefix = "https://"
+)
 
 var serverURL string
 
 func config(cmd *cobra.Command, args []string) {
 	fmt.Println("config called")
-	if !strings.HasPrefix(serverURL, httpPrefix) {
+	if !strings.HasPrefix(serverURL, httpPrefix) && !strings.HasPrefix(serverURL, httpsPrefix) {
 		serverURL = httpPrefix + serverURL
 	}
 	if _, err := url.Parse(serverURL); err != nil {
 		log.Fatal(err)
 	}
+	log.Println("new server URL: ", serverURL)
 	if serverURL != "" {
 		viper.Set(viperServerURL, serverURL)
 		viper.WriteConfig()
