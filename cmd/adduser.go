@@ -51,7 +51,7 @@ func addUser(cmd *cobra.Command, args []string) {
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", viper.GetString(viperToken)))
-	client := &http.Client{}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal().Err(err).Msg("")

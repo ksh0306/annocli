@@ -135,7 +135,7 @@ func upload(cmd *cobra.Command, args []string) {
 		// do compress
 		var err error
 		uploadFilePath, err = tarDir(uploadDirPath)
-		fmt.Printf("tar completed. time elapsed: %v\n", time.Since(startTime).Seconds())
+		fmt.Printf("tar completed. time elapsed: %.3f seconds\n", time.Since(startTime).Seconds())
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}
@@ -163,6 +163,13 @@ func upload(cmd *cobra.Command, args []string) {
 	}
 	defer file.Close()
 
+	// file size
+	fi, err := file.Stat()
+	if err != nil {
+		log.Fatal().Err(err).Send()
+	}
+	fmt.Printf("tar size: %d MB\n", fi.Size()/1024/1024)
+
 	requestBody := &bytes.Buffer{}
 	writer := multipart.NewWriter(requestBody)
 	part, _ := writer.CreateFormFile("file", file.Name())
@@ -179,14 +186,14 @@ func upload(cmd *cobra.Command, args []string) {
 	// req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Content-Type", writer.FormDataContentType())
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", viper.GetString(viperToken)))
-	client := &http.Client{}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
 	defer resp.Body.Close()
 
-	fmt.Printf("--upload elapsed time: %v\n", time.Since(startTime).Seconds())
+	fmt.Printf("--upload elapsed time: %.3f seconds\n", time.Since(startTime).Seconds())
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal().Err(err).Send()
@@ -228,6 +235,6 @@ func init() {
 	// uploadCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	uploadCmd.Flags().StringVarP(&uploadFilePath, "file", "f", "", "file path to upload")
-	uploadCmd.Flags().StringVarP(&uploadDirPath, "dir", "d", "", "directory path to upload")
+	uploadCmd.Flags().StringVar(&uploadDirPath, "dir", "", "directory path to upload")
 	// uploadCmd.MarkFlagRequired("file")
 }

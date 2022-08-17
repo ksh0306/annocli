@@ -4,7 +4,9 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +30,25 @@ const (
 	viperServerURL = "serverURL"
 	viperToken     = "token"
 )
+
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use:   "annocli",
+	Short: "Annotation AI CLI tool which interact with it's API servers",
+	Long:  `Annotation AI CLI tool which interact with it's API servers`,
+	// Uncomment the following line if your bare application
+	// has an action associated with it:
+	// Run: func(cmd *cobra.Command, args []string) { },
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	err := rootCmd.Execute()
+	if err != nil {
+		os.Exit(1)
+	}
+}
 
 func configViper() {
 	homeDir, err := os.UserHomeDir()
@@ -64,25 +85,6 @@ func configViper() {
 	viper.WatchConfig()
 }
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "annocli",
-	Short: "Annotation AI CLI tool which interact with it's API servers",
-	Long:  `Annotation AI CLI tool which interact with it's API servers`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
-}
-
 func zerologConfig() {
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	if !debug {
@@ -102,13 +104,23 @@ func zerologConfig() {
 		return fmt.Sprintf("%s:", i)
 	}
 	output.FormatFieldValue = func(i interface{}) string {
-		return strings.ToUpper(fmt.Sprintf("%s", i))
+		return fmt.Sprintf("%s", i)
 	}
 
 	log.Logger = zerolog.New(output).With().Caller().Timestamp().Logger()
 }
 
 var debug bool
+var client *http.Client
+
+func setHTTPClient() {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	client = &http.Client{Transport: tr}
+}
 
 func init() {
 	// Here you will define your flags and configuration settings.
@@ -119,8 +131,10 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
+
 	cobra.OnInitialize(zerologConfig)
 	cobra.OnInitialize(configViper)
+	cobra.OnInitialize(setHTTPClient)
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "More logs for debugging")

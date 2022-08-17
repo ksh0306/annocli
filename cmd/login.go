@@ -30,9 +30,19 @@ func loginUser(cmd *cobra.Command, args []string) {
 		"username": username,
 		"password": password,
 	})
-	responseBody := bytes.NewBuffer(postBody)
 
-	resp, err := http.Post(loginURL, "application/json", responseBody)
+	requestBody := bytes.NewBuffer(postBody)
+	req, err := http.NewRequest(http.MethodPost, loginURL, requestBody)
+	if err != nil {
+		log.Fatal().Err(err).Send()
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal().Err(err).Msg("")
+	}
+	defer resp.Body.Close()
 
 	if err != nil {
 		log.Fatal().Err(err).Send()
