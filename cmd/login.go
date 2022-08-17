@@ -50,6 +50,11 @@ func loginUser(cmd *cobra.Command, args []string) {
 	fmt.Println("--response status", resp.Status)
 	fmt.Println("--response body", string(body))
 
+	if resp.StatusCode != http.StatusOK {
+		log.Info().Msg("failed to login")
+		return
+	}
+
 	var data interface{}
 	if err := json.Unmarshal(body, &data); err != nil {
 		log.Fatal().Err(err).Send()
@@ -68,10 +73,10 @@ func loginUser(cmd *cobra.Command, args []string) {
 
 	// display current config
 	fmt.Println("current conffig")
-	fmt.Println("--"+viperUsername, viper.GetString(viperUsername))
-	fmt.Println("--"+viperPassword, viper.GetString(viperPassword))
-	fmt.Println("--"+viperServerURL, viper.GetString(viperServerURL))
-	fmt.Println("--"+viperToken, viper.GetString(viperToken))
+	fmt.Printf("--%s: %s\n", viperUsername, viper.GetString(viperUsername))
+	fmt.Printf("--%s: %s\n", viperPassword, viper.GetString(viperPassword))
+	fmt.Printf("--%s: %s\n", viperServerURL, viper.GetString(viperServerURL))
+	fmt.Printf("--%s: %s\n", viperToken, viper.GetString(viperToken))
 }
 
 // loginCmd represents the login command
