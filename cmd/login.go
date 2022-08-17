@@ -19,7 +19,6 @@ import (
 var loginEndpoint = "/login"
 
 func loginUser(cmd *cobra.Command, args []string) {
-	fmt.Println("login called")
 	loginURL := viper.GetString(viperServerURL) + loginEndpoint
 
 	userInfo := strings.Split(account, ":")
@@ -44,17 +43,12 @@ func loginUser(cmd *cobra.Command, args []string) {
 	}
 	defer resp.Body.Close()
 
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("err:", err.Error())
-		return
-	}
-	fmt.Println("body:", string(body))
+	fmt.Println("--response status", resp.Status)
+	fmt.Println("--response body", string(body))
 
 	var data interface{}
 	if err := json.Unmarshal(body, &data); err != nil {
@@ -63,7 +57,6 @@ func loginUser(cmd *cobra.Command, args []string) {
 
 	msg := data.(map[string]interface{})
 	token := msg["token"]
-	fmt.Println("token: ", token)
 
 	// 여기서 username, password, token 을 저장하자
 	viper.Set(viperUsername, username)
@@ -73,11 +66,12 @@ func loginUser(cmd *cobra.Command, args []string) {
 		log.Fatal().Err(err).Send()
 	}
 
-	// test
-	fmt.Println(viperUsername, viper.GetString(viperUsername))
-	fmt.Println(viperPassword, viper.GetString(viperPassword))
-	fmt.Println(viperServerURL, viper.GetString(viperServerURL))
-	fmt.Println(viperToken, viper.GetString(viperToken))
+	// display current config
+	fmt.Println("current conffig")
+	fmt.Println("--"+viperUsername, viper.GetString(viperUsername))
+	fmt.Println("--"+viperPassword, viper.GetString(viperPassword))
+	fmt.Println("--"+viperServerURL, viper.GetString(viperServerURL))
+	fmt.Println("--"+viperToken, viper.GetString(viperToken))
 }
 
 // loginCmd represents the login command

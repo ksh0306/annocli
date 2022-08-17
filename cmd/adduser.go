@@ -62,8 +62,8 @@ func addUser(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
-	log.Debug().Str("response status", resp.Status).Send()
-	log.Debug().Str("response body", string(body)).Send()
+	fmt.Println("--response status", resp.Status)
+	fmt.Println("--response body", string(body))
 }
 
 // adduserCmd represents the adduser command

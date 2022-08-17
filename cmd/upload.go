@@ -194,11 +194,12 @@ func upload(cmd *cobra.Command, args []string) {
 	defer resp.Body.Close()
 
 	fmt.Printf("--upload elapsed time: %.3f seconds\n", time.Since(startTime).Seconds())
-	respBody, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
-	fmt.Println("--response body:", string(respBody))
+	fmt.Println("--response status", resp.Status)
+	fmt.Println("--response body", string(body))
 }
 
 // uploadCmd represents the upload command
