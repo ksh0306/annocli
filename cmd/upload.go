@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -31,10 +31,10 @@ func tarDir(src string) (string, error) {
 		return "", err
 	}
 	destFilePath := filepath.Join(tempDir, filepath.Base(src)+".tar")
-	log.Println(destFilePath)
+	log.Info().Msg(destFilePath)
 	tarfile, err := os.OpenFile(destFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err)
 	}
 	defer tarfile.Close()
 
@@ -129,7 +129,7 @@ func upload(cmd *cobra.Command, args []string) {
 	startTime := time.Now()
 	cwd, err := os.Getwd() // remember current directory
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err)
 	}
 	if uploadDirPath != "" {
 		// do compress
@@ -137,30 +137,30 @@ func upload(cmd *cobra.Command, args []string) {
 		uploadFilePath, err = tarDir(uploadDirPath)
 		log.Printf("made tar time: %v\n", time.Since(startTime))
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal().Err(err)
 		}
 
 		// back to current dir after tarDir
-		log.Println("back to current directory: ", cwd)
+		log.Debug().Str("back to current directory", cwd)
 		if err := os.Chdir(cwd); err != nil {
-			log.Fatal(err)
+			log.Fatal().Err(err)
 		}
 
 		defer func() {
 			tmpDir := filepath.Dir(uploadFilePath)
-			log.Println("remove dir ", tmpDir)
+			log.Info().Str("remove dir", tmpDir)
 			if err := os.RemoveAll(tmpDir); err != nil {
-				log.Println(err)
+				log.Debug().Err(err)
 				return
 			}
-			log.Println("remove tar: ", uploadFilePath)
+			log.Info().Str("remove tar", uploadFilePath)
 		}()
 	}
 
-	log.Println("uploadFilePath:", uploadFilePath)
+	log.Debug().Str("uploadFilePath", uploadFilePath)
 	file, err := os.Open(uploadFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err)
 	}
 	defer file.Close()
 
@@ -175,8 +175,7 @@ func upload(cmd *cobra.Command, args []string) {
 
 	req, err := http.NewRequest(http.MethodPost, uploadURL, requestBody)
 	if err != nil {
-		log.Println(err)
-		return
+		log.Fatal().Err(err)
 	}
 	// req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Content-Type", writer.FormDataContentType())
@@ -184,18 +183,17 @@ func upload(cmd *cobra.Command, args []string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println(err)
+		log.Fatal().Err(err)
 		return
 	}
 	defer resp.Body.Close()
 
 	log.Printf("upload time: %v\n", time.Since(startTime))
-	respbody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("err:", err.Error())
-		return
+		log.Fatal().Err(err)
 	}
-	log.Println("respbody:", string(respbody))
+	log.Info().Str("respBody", string(respBody))
 }
 
 // uploadCmd represents the upload command

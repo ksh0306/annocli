@@ -5,10 +5,10 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"net/url"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -26,9 +26,9 @@ func config(cmd *cobra.Command, args []string) {
 		serverURL = httpPrefix + serverURL
 	}
 	if _, err := url.Parse(serverURL); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err)
 	}
-	log.Println("new server URL: ", serverURL)
+	log.Info().Str("new server URL", serverURL)
 	if serverURL != "" {
 		viper.Set(viperServerURL, serverURL)
 		viper.WriteConfig()

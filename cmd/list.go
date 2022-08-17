@@ -4,8 +4,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -17,9 +16,9 @@ var listCmd = &cobra.Command{
 	Long:  `List all current config which stored in ${HOME}/annocli/config.yaml`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// get all config and display
-		fmt.Println("username: ", viper.GetString(viperUsername))
-		fmt.Println("password: ", viper.GetString(viperPassword))
-		fmt.Println("server URL: ", viper.GetString(viperServerURL))
+		log.Info().Str("username: ", viper.GetString(viperUsername))
+		log.Info().Str("password: ", viper.GetString(viperPassword))
+		log.Info().Str("server URL: ", viper.GetString(viperServerURL))
 	},
 }
 

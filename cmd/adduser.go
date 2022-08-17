@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -40,15 +40,14 @@ func addUser(cmd *cobra.Command, args []string) {
 	requestBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest(http.MethodPost, signUpURL, requestBody)
 	if err != nil {
-		log.Println(err)
-		return
+		log.Fatal().Err(err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", viper.GetString(viperToken)))
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("An Error Occured %v", err)
+		log.Fatal().Err(err)
 	}
 	defer resp.Body.Close()
 

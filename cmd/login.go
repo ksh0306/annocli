@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,7 +35,7 @@ func loginUser(cmd *cobra.Command, args []string) {
 	resp, err := http.Post(loginURL, "application/json", responseBody)
 
 	if err != nil {
-		log.Fatalf("An Error Occured %v", err)
+		log.Fatal().Err(err)
 	}
 	defer resp.Body.Close()
 
@@ -48,8 +48,7 @@ func loginUser(cmd *cobra.Command, args []string) {
 
 	var data interface{}
 	if err := json.Unmarshal(body, &data); err != nil {
-		log.Println(err.Error())
-		return
+		log.Fatal().Err(err)
 	}
 
 	msg := data.(map[string]interface{})
@@ -61,14 +60,14 @@ func loginUser(cmd *cobra.Command, args []string) {
 	viper.Set(viperPassword, password)
 	viper.Set(viperToken, token)
 	if err := viper.WriteConfig(); err != nil {
-		log.Println(err)
+		log.Fatal().Err(err)
 	}
 
 	// test
-	log.Println(viperUsername, viper.GetString(viperUsername))
-	log.Println(viperPassword, viper.GetString(viperPassword))
-	log.Println(viperServerURL, viper.GetString(viperServerURL))
-	log.Println(viperToken, viper.GetString(viperToken))
+	log.Info().Str(viperUsername, viper.GetString(viperUsername))
+	log.Info().Str(viperPassword, viper.GetString(viperPassword))
+	log.Info().Str(viperServerURL, viper.GetString(viperServerURL))
+	log.Info().Str(viperToken, viper.GetString(viperToken))
 }
 
 // loginCmd represents the login command
