@@ -35,7 +35,7 @@ func loginUser(cmd *cobra.Command, args []string) {
 	resp, err := http.Post(loginURL, "application/json", responseBody)
 
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
 	defer resp.Body.Close()
 
@@ -48,7 +48,7 @@ func loginUser(cmd *cobra.Command, args []string) {
 
 	var data interface{}
 	if err := json.Unmarshal(body, &data); err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
 
 	msg := data.(map[string]interface{})
@@ -60,14 +60,14 @@ func loginUser(cmd *cobra.Command, args []string) {
 	viper.Set(viperPassword, password)
 	viper.Set(viperToken, token)
 	if err := viper.WriteConfig(); err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
 
 	// test
-	log.Info().Str(viperUsername, viper.GetString(viperUsername))
-	log.Info().Str(viperPassword, viper.GetString(viperPassword))
-	log.Info().Str(viperServerURL, viper.GetString(viperServerURL))
-	log.Info().Str(viperToken, viper.GetString(viperToken))
+	fmt.Println(viperUsername, viper.GetString(viperUsername))
+	fmt.Println(viperPassword, viper.GetString(viperPassword))
+	fmt.Println(viperServerURL, viper.GetString(viperServerURL))
+	fmt.Println(viperToken, viper.GetString(viperToken))
 }
 
 // loginCmd represents the login command

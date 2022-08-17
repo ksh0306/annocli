@@ -31,10 +31,10 @@ func tarDir(src string) (string, error) {
 		return "", err
 	}
 	destFilePath := filepath.Join(tempDir, filepath.Base(src)+".tar")
-	log.Info().Msg(destFilePath)
+	log.Debug().Msg(destFilePath)
 	tarfile, err := os.OpenFile(destFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
 	defer tarfile.Close()
 
@@ -129,38 +129,37 @@ func upload(cmd *cobra.Command, args []string) {
 	startTime := time.Now()
 	cwd, err := os.Getwd() // remember current directory
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
 	if uploadDirPath != "" {
 		// do compress
 		var err error
 		uploadFilePath, err = tarDir(uploadDirPath)
-		log.Printf("made tar time: %v\n", time.Since(startTime))
+		fmt.Printf("tar completed. time elapsed: %v\n", time.Since(startTime).Seconds())
 		if err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Send()
 		}
 
 		// back to current dir after tarDir
-		log.Debug().Str("back to current directory", cwd)
+		log.Debug().Str("back to current directory", cwd).Send()
 		if err := os.Chdir(cwd); err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Send()
 		}
 
 		defer func() {
 			tmpDir := filepath.Dir(uploadFilePath)
-			log.Info().Str("remove dir", tmpDir)
+			log.Debug().Str("remove dir", tmpDir).Send()
 			if err := os.RemoveAll(tmpDir); err != nil {
-				log.Debug().Err(err)
-				return
+				log.Fatal().Err(err).Send()
 			}
-			log.Info().Str("remove tar", uploadFilePath)
+			log.Debug().Str("remove tar", uploadFilePath)
 		}()
 	}
 
 	log.Debug().Str("uploadFilePath", uploadFilePath)
 	file, err := os.Open(uploadFilePath)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
 	defer file.Close()
 
@@ -175,7 +174,7 @@ func upload(cmd *cobra.Command, args []string) {
 
 	req, err := http.NewRequest(http.MethodPost, uploadURL, requestBody)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
 	// req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Content-Type", writer.FormDataContentType())
@@ -183,17 +182,16 @@ func upload(cmd *cobra.Command, args []string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal().Err(err)
-		return
+		log.Fatal().Err(err).Send()
 	}
 	defer resp.Body.Close()
 
-	log.Printf("upload time: %v\n", time.Since(startTime))
+	fmt.Printf("--upload elapsed time: %v\n", time.Since(startTime).Seconds())
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
-	log.Info().Str("respBody", string(respBody))
+	fmt.Println("--response body:", string(respBody))
 }
 
 // uploadCmd represents the upload command

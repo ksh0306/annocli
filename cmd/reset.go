@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -22,10 +23,9 @@ var resetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		homedir := os.Getenv("HOME")
 		if err := os.Remove(homedir + "/" + appName + "/" + configName + "." + configType); err != nil {
-			fmt.Println("reset config failed: ", err)
-			return
+			log.Fatal().Err(err).Send()
 		}
-		fmt.Println("config.yaml removed. reset config completed.")
+		fmt.Println("reset config\n--config.yaml removed.")
 	},
 }
 

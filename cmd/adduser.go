@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -25,13 +26,19 @@ type User struct {
 var signUpEndpoint = "/v1/signup"
 
 func addUser(cmd *cobra.Command, args []string) {
-	fmt.Println("adduser called")
-	signUpURL := viper.GetString(viperServerURL) + signUpEndpoint
-	// TODO:verify url format
+
+	sURL := viper.GetString(viperServerURL)
+	if _, err := url.ParseRequestURI(sURL); err != nil {
+		fmt.Println("server URL need to config")
+		return
+	}
+
+	signUpURL := sURL + signUpEndpoint
 
 	userInfo := strings.Split(account, ":")
 	username := userInfo[0]
 	password := userInfo[1]
+	fmt.Println("add new user\n--username:", username)
 
 	postBody, _ := json.Marshal(map[string]string{
 		"username": username,
@@ -40,23 +47,23 @@ func addUser(cmd *cobra.Command, args []string) {
 	requestBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest(http.MethodPost, signUpURL, requestBody)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", viper.GetString(viperToken)))
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("")
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("err:", err.Error())
-		return
+		log.Fatal().Err(err).Send()
 	}
-	fmt.Println("body:", string(body))
+	log.Debug().Str("response status", resp.Status).Send()
+	log.Debug().Str("response body", string(body)).Send()
 }
 
 // adduserCmd represents the adduser command

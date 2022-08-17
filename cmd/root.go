@@ -32,11 +32,11 @@ const (
 func configViper() {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
 	configDir := filepath.Join(homeDir, appName)
 	configFile := filepath.Join(configDir, configName+"."+configType)
-	log.Info().Msgf("configFile: %s", configFile)
+	log.Debug().Msgf("configFile: %s", configFile)
 
 	viper.SetConfigName("config")  // name of config file (without extension)
 	viper.SetConfigType("yaml")    // REQUIRED if the config file does not have the extension in the name
@@ -46,20 +46,20 @@ func configViper() {
 	_, error := os.Stat(configFile)
 	if os.IsNotExist(error) {
 		if err := os.MkdirAll(configDir, 0755); err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Send()
 		}
 		if _, err := os.Create(configFile); err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Send()
 		}
 	}
 
 	if err := viper.ReadInConfig(); err != nil { // Handle errors reading the config file
-		log.Fatal().Err(err).Msg("Fatal error config file")
+		log.Fatal().Err(err).Send()
 	}
 
 	// watch file changed and reload
 	viper.OnConfigChange(func(e fsnotify.Event) {
-		log.Info().Msgf("Config file changed: %s", e.Name)
+		log.Debug().Msgf("Config file changed: %s", e.Name)
 	})
 	viper.WatchConfig()
 }
@@ -84,16 +84,20 @@ func Execute() {
 }
 
 func zerologConfig() {
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	if !debug {
+		zerolog.SetGlobalLevel(zerolog.Disabled)
+	}
+
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
 
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	output.FormatLevel = func(i interface{}) string {
 		return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
 	}
-	output.FormatMessage = func(i interface{}) string {
-		return fmt.Sprintf("***%s****", i)
-	}
+	// output.FormatMessage = func(i interface{}) string { // no message makes not pretty scene
+	// 	return fmt.Sprintf("%s", i)
+	// }
 	output.FormatFieldName = func(i interface{}) string {
 		return fmt.Sprintf("%s:", i)
 	}
@@ -115,10 +119,9 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
+	cobra.OnInitialize(zerologConfig)
+	cobra.OnInitialize(configViper)
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCmd.Flags().BoolP("debug", "d", false, "More logs for debugging")
-
-	zerologConfig()
-	configViper()
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "More logs for debugging")
 }

@@ -21,14 +21,14 @@ const (
 var serverURL string
 
 func config(cmd *cobra.Command, args []string) {
-	fmt.Println("config called")
+
 	if !strings.HasPrefix(serverURL, httpPrefix) && !strings.HasPrefix(serverURL, httpsPrefix) {
 		serverURL = httpPrefix + serverURL
 	}
 	if _, err := url.Parse(serverURL); err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Send()
 	}
-	log.Info().Str("new server URL", serverURL)
+	fmt.Println("server URL set as", serverURL)
 	if serverURL != "" {
 		viper.Set(viperServerURL, serverURL)
 		viper.WriteConfig()
